@@ -6,6 +6,7 @@ extern crate regex;
 extern crate time;
 
 extern crate clap;
+extern crate toml;
 
 use git::LogReaderConfig;
 use log_writer::{ LogWriter, LogWriterOptions };
@@ -22,43 +23,11 @@ mod log_writer;
 mod section_builder;
 mod format_util;
 
+static LOCAL_CONFIG = "Clog.toml";
 
 fn main () {
-    // Pull version from Cargo.toml
-    let version = format!("{}.{}.{}{}",
-                          env!("CARGO_PKG_VERSION_MAJOR"),
-                          env!("CARGO_PKG_VERSION_MINOR"),
-                          env!("CARGO_PKG_VERSION_PATCH"),
-                          option_env!("CARGO_PKG_VERSION_PRE").unwrap_or(""));
-    let matches = App::new("clog")
-        .version(&version[..])
-        .about("a conventional changelog for the rest of us")
-        .arg(Arg::new("repository")
-            .short("r")
-            .long("repository")
-            .takes_value(true)
-            .help("e.g. https://github.com/thoughtram/clog"))
-        .arg(Arg::new("setversion")
-            .long("setversion")
-            .help("e.g. 1.0.1")
-            .takes_value(true))
-        .arg(Arg::new("subtitle")
-            .long("subtitle")
-            .help("e.g. crazy-release-title")
-            .takes_value(true))
-        .arg(Arg::new("from")
-            .help("e.g. 12a8546")
-            .long("from")
-            .takes_value(true))
-        .arg(Arg::new("to")
-            .long("to")
-            .help("e.g. 8057684 (Defaults to HEAD when omitted)")
-            .takes_value(true))
-        .arg(Arg::new("from-latest-tag")
-            .long("from-latest-tag")
-            .help("uses the latest tag as starting point (ignores other --from parameters)")
-            .mutually_excludes("from"))
-        .get_matches();
+    
+    let matches = parse_args();
 
     let start_nsec = time::get_time().nsec;
 
@@ -96,4 +65,42 @@ fn main () {
     let end_nsec = time::get_time().nsec;
     let elapsed_mssec = (end_nsec - start_nsec) / 1000000;
     println!("changelog updated. (took {} ms)", elapsed_mssec);
+}
+
+fn parse_args() -> ArgMatches<'a> {
+    // Pull version from Cargo.toml
+    let version = format!("{}.{}.{}{}",
+                          env!("CARGO_PKG_VERSION_MAJOR"),
+                          env!("CARGO_PKG_VERSION_MINOR"),
+                          env!("CARGO_PKG_VERSION_PATCH"),
+                          option_env!("CARGO_PKG_VERSION_PRE").unwrap_or(""));
+    App::new("clog")
+        .version(&version[..])
+        .about("a conventional changelog for the rest of us")
+        .arg(Arg::new("repository")
+            .short("r")
+            .long("repository")
+            .takes_value(true)
+            .help("e.g. https://github.com/thoughtram/clog"))
+        .arg(Arg::new("setversion")
+            .long("setversion")
+            .help("e.g. 1.0.1")
+            .takes_value(true))
+        .arg(Arg::new("subtitle")
+            .long("subtitle")
+            .help("e.g. crazy-release-title")
+            .takes_value(true))
+        .arg(Arg::new("from")
+            .help("e.g. 12a8546")
+            .long("from")
+            .takes_value(true))
+        .arg(Arg::new("to")
+            .long("to")
+            .help("e.g. 8057684 (Defaults to HEAD when omitted)")
+            .takes_value(true))
+        .arg(Arg::new("from-latest-tag")
+            .long("from-latest-tag")
+            .help("uses the latest tag as starting point (ignores other --from parameters)")
+            .mutually_excludes("from"))
+        .get_matches()
 }
