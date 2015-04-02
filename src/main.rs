@@ -15,7 +15,7 @@ use std::io::Read;
 use std::path::Path;
 use std::borrow::ToOwned;
 
-use clap::{App, Arg};
+use clap::{App, Arg, ArgMatches};
 
 mod common;
 mod git;

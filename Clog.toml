@@ -1,0 +1,12 @@
+[clog]
+# The repository to use
+repository = "https://github.com/thoughtram/clog"
+
+# Commit ID to start from
+from = ""
+
+# Commit ID, or HEAD if omitted
+to = ""
+
+# Start from latest tag (if true, ignores "from")
+from-latest-tag = false
