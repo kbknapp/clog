@@ -1,17 +1,6 @@
-#![crate_name = "clog"]
-
-// Until regex_macros compiles with nightly, these should be commented out
-//
-// #![cfg_attr(feature = "unstable", feature(plugin))]
-// #![cfg_attr(feature = "unstable", plugin(regex_macros))]
-
-extern crate regex;
-extern crate time;
-extern crate semver;
-extern crate toml;
-
 #[macro_use]
 extern crate clap;
+extern crate time;
 
 use std::fs::File;
 use std::io::Read;
@@ -24,41 +13,33 @@ use log_writer::LogWriter;
 use clogconfig::{LinkStyle, ClogConfig};
 use sectionmap::SectionMap;
 
-#[macro_use]
-mod macros;
-mod logentry;
-mod git;
-mod log_writer;
-mod sectionmap;
-mod clogconfig;
-
-// for now the clog configuration file is .clog.toml (perhaps change to use definable
+// for now the clog configuration file is .clog.toml (perhaps change to user definable
 // in a future version...)
 const CLOG_CONFIG_FILE: &'static str = ".clog.toml";
 
 fn main () {
-
     let styles = LinkStyle::variants();
     let matches = App::new("clog")
         // Pull version from Cargo.toml
         .version(&format!("v{}", crate_version!())[..])
         .about("a conventional changelog for the rest of us")
-        .args_from_usage("-r --repository=[repository]  'e.g. https://github.com/thoughtram/clog'
-                          --from=[from]                 'e.g. 12a8546'
-                          --major                       'Increment major version by one (Sets minor and patch to 0)'
-                          --minor                       'Increment minor version by one (Sets patch to 0)'
-                          --patch                       'Increment patch version by one'
-                          --subtitle=[subtitle]         'e.g. crazy-release-title'
-                          --to=[to]                     'e.g. 8057684 (Defaults to HEAD when omitted)'
-                          -o --outfile=[outfile]        'Where to write the changelog (Defaults to \'changelog.md\')'
-                          --setversion=[ver]            'e.g. 1.0.1'")
+        .args_from_usage("-r, --repository=[repo]   'Repo used for link generation (without the .git, e.g. https://github.com/thoughtram/clog)'
+                          -f, --from=[from]         'e.g. 12a8546'
+                          -M, --major               'Increment major version by one (Sets minor and patch to 0)'
+                          -m, --minor               'Increment minor version by one (Sets patch to 0)'
+                          -p, --patch               'Increment patch version by one'
+                          -s, --subtitle=[subtitle] 'e.g. \"Crazy Release Title\"'
+                          -t, --to=[to]             'e.g. 8057684 (Defaults to HEAD when omitted)'
+                          -o, --outfile=[outfile]   'Where to write the changelog (Defaults to \'changelog.md\')'
+                          -c, --config              'The Clog Configuration TOML file to use (Defaults to \'.clog.toml\')'
+                          --setversion=[ver]        'e.g. 1.0.1'")
         // Because --from-latest-tag can't be used with --from, we add it seperately so we can
         // specify a .mutually_excludes()
-        .arg(Arg::from_usage("--from-latest-tag 'use latest tag as start (instead of --from)'")
-                .mutually_excludes("from"))
+        .arg(Arg::from_usage("-F, --from-latest-tag 'use latest tag as start (instead of --from)'")
+                .conflicts_with("from"))
         // Because we may want to add more "flavors" at a later date, we can automate the process
         // of enumerating all possible values with clap
-        .arg(Arg::from_usage("--link-style=[style]     'The style of repository link to generate, defaults to github'")
+        .arg(Arg::from_usage("-l, --link-style=[style]     'The style of repository link to generate (Defaults to github)'")
             .possible_values(&styles))
         // Since --setversion shouldn't be used with any of the --major, --minor, or --match, we
         // set those as exclusions

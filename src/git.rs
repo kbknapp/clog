@@ -1,7 +1,32 @@
+use std::fmt;
 use std::process::Command;
 
 use clogconfig::ClogConfig;
-use logentry::LogEntry;
+
+#[derive(Clone)]
+pub struct Commit<'a> {
+    pub hash: String,
+    pub subject: String,
+    pub component: String,
+    pub closes: Vec<String>,
+    pub breaks: Vec<String>,
+    pub commit_type: &'a String 
+}
+
+pub type Commits = Vec<Commit>;
+
+impl<'a> fmt::Debug for Commit<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{
+            hash:{:?},
+            subject: {:?},
+            commit_type: {:?},
+            component: {:?},
+            closes: {:?},
+            breaks: {:?}
+        }}", self.hash, self.subject, self.commit_type, self.component, self.closes, self.breaks)
+    }
+}
 
 pub fn get_latest_tag() -> String {
     let output = Command::new("git")
@@ -33,7 +58,7 @@ pub fn get_last_commit() -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
-pub fn get_log_entries(config: &ClogConfig) -> Vec<LogEntry>{
+pub fn get_log_entries(config: &ClogConfig) -> Commits {
 
     let range = match &config.from[..] {
         "" => "HEAD".to_owned(),
@@ -56,7 +81,7 @@ pub fn get_log_entries(config: &ClogConfig) -> Vec<LogEntry>{
 }
 
 
-fn parse_raw_commit<'a>(commit_str:&str, config: &'a ClogConfig) -> LogEntry<'a> {
+fn parse_raw_commit<'a>(commit_str:&str, config: &'a ClogConfig) -> Commit<'a> {
     let mut lines = commit_str.split('\n');
 
     let hash = lines.next().unwrap_or("").to_owned();
@@ -77,7 +102,7 @@ fn parse_raw_commit<'a>(commit_str:&str, config: &'a ClogConfig) -> LogEntry<'a>
                       .map(|caps| caps.at(2).unwrap_or("").to_owned())
                       .collect();
 
-    LogEntry {
+    Commit {
         hash: hash,
         subject: subject.unwrap().to_owned(),
         component: component.unwrap_or("").to_owned(),
